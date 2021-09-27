@@ -54,6 +54,7 @@ Kafka是一个分布式的基于发布/订阅模式的消息引擎系统，类�
 ![image-20210927142133837](kafka-study/image-20210927142133837.png)
 
 ### Kafka术语：
+
 **Record**：
 
 Kafka处理的主要对象
@@ -211,6 +212,12 @@ Kafka使用**消息日志（Log）**来保存数据，一个日志就是磁盘�
 **消费者组：**Consumer Group。多个消费者实例共同组成的一个组，同时消费多个分区以实现高吞吐
 
 **重平衡：**Rebalance。消费者组内某个消费者实例挂掉后，其他消费者实例自动重新分配订阅主题分区的过程，Rebalance是Kafka消费者端实现高可用的重要手段
+
+### Zookeeper
+
+在讲架构图前一定要介绍一下zookeeper，在kafka的consumer和broker中都有用到：
+
+![image-20210927182410750](kafka-study/image-20210927182410750.png)
 
 ### 架构图
 
