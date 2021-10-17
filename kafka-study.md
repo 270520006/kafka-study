@@ -233,7 +233,7 @@ Kafka使用**消息日志（Log）**来保存数据，一个日志就是磁盘�
 
 **重平衡：**Rebalance。消费者组内某个消费者实例挂掉后，其他消费者实例自动重新分配订阅主题分区的过程，Rebalance是Kafka消费者端实现高可用的重要手段
 
-### Zookeeper在kafka中的作用
+### Zookeeper在kafka中的作用（2.8后无zk）
 
 在讲架构图前一定要介绍一下zookeeper，在kafka的consumer和broker中都有用到：
 
@@ -531,3 +531,78 @@ public class KafkaConsumer {
     }
 }
 ```
+
+### kafka命令
+
+​	学习完怎么安装kafka和整合kafka，下面我们来学习一下kafka在linux上的命令还有api。
+
+* kafka内重要的目录
+
+```shell
+#使用kafka需要到该目录下找到/kafka-topics.sh
+kafka_2.11-1.01/bin/
+#kakfa配置类
+./kafka-server-star.sh/config/server.properties
+#kafka日志
+log/tmp/kafka-logs
+#docker 容器下是在这里
+kafka/kafka-logs-faf94cd21bfc
+```
+
+* 创建topic
+  * create：创建主题的动作指令
+  * zookeeper 127.0.0.1:2181：zk的ip地址，自行填写下
+  * replication-factor 1： 指定了副本数为1
+  * partitions 2：指定分区个数
+  * topic test1：指定分区名字
+
+```shell
+kafka-topics.sh --zookeeper 127.0.0.1:2181 --create --topic test1 --partitions 2 --replication-factor 1
+```
+
+* 查看topic
+
+```shell
+kafka-topics.sh --zookeeper 127.0.0.1:2181 --list
+```
+
+* 查看topic详细信息
+
+```shell
+kafka-topics.sh  --zookeeper 127.0.0.1:2181 --describe --topic test1
+```
+
+### kafka特性深入
+
+#### 日志存储
+
+​	Kafka中的消息是以主题为基本单位进行归类的，各个主题在逻辑上相互独立。每个主题又可以分为一个或多个分区，分区的数量可以在主题创建的时候指定，也可以在之后修改。每条消息在发送的时候会根据分区规则被追加到指定的分区中，分区中的每条消息都会被分配一个唯一的序列号，也就是通常所说的偏移量（offset)。
+
+​	总结：kafka每个分区都是有序的，offset是为了宕机时，还能继续上一次查找或查找重复消息时设计出来的。
+
+![image-20211017143922775](kafka-study/image-20211017143922775.png)
+
+​	不考虑多副本的情况，一个分区对应一个日志(Log)。为了防止Log过大，Kafka又引入了日志分段(LogSegment)的概念，将Log切分为多个LogSegment，相当于一个巨型文件被平均分配为多个相对较小的文件，这样也便于消息的维护和清理。
+
+```shell
+#可以到具体盘符下查看存储的日志有什么
+log/tmp/kafka-logs
+#docker 容器下是在这里
+kafka/kafka-logs-faf94cd21bfc
+#查看日志文件
+bash-5.1# cd kafka-logs-faf94cd21bfc/
+bash-5.1# ls 
+cleaner-offset-checkpoint         recovery-point-offset-checkpoint  test1-1
+log-start-offset-checkpoint       replication-offset-checkpoint
+meta.properties                   test1-0
+#会发现kafka内部自己存储了我对应的offset，以便后续查询
+```
+
+会发现kafka内部自己存储了我对应的offset，以便后续查询重复的消息，进入到对应分区，会发现字段都在这。
+
+![image-20211017152459133](kafka-study/image-20211017152459133.png)
+
+​	总结：消息--->Broker--->Topic--->partition（对应分区）--->replica（副本）--->日志（日志由多个日志分段组成：包含日志文件，offset索引文件，时间戳索引文件和其他文件）
+
+![image-20211017144644856](kafka-study/image-20211017144644856.png)
+

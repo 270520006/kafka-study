@@ -7,7 +7,7 @@
 
 2、kafka的消息队列模式
 
-3、结合zk看kafka
+3、结合zk看kafka（2.8后去zk了）
 
 4、使用docker搭建了kafka单体和集群
 
