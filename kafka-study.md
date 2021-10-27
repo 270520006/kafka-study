@@ -376,23 +376,13 @@ docker run -d --name zookeeper -p 2181:2181 -t wurstmeister/zookeeper
 * 运行kafka镜像
 
 ```shell
-docker run -d --name kafka1 \
- -p 9092:9092 \
- -e KAFKA_BROKER_ID=0 \
- -e KAFKA_ZOOKEEPER_CONNECT=192.168.56.101:2181 \
- -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.56.101:9092 \
- -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -t wurstmeister/kafka
+docker run -d --name kafka1 \ -p 9092:9092 \ -e KAFKA_BROKER_ID=0 \ -e KAFKA_ZOOKEEPER_CONNECT=192.168.56.101:2181 \ -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.56.101:9092 \ -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -t wurstmeister/kafka
 ```
 
 * 进入kafka创建topic
 
 ```shell
-#先进入容器
-docker exec -it kafka1 /bin/bash
-#到topics.sh目录下
-cd bin/
-#建立分区
-kafka-topics.sh --create --zookeeper 192.168.56.101:2181 --replication-factor 2 --partitions 2 --topic topic1
+#先进入容器docker exec -it kafka1 /bin/bash#到topics.sh目录下cd bin/#建立分区kafka-topics.sh --create --zookeeper 192.168.56.101:2181 --replication-factor 2 --partitions 2 --topic topic1
 ```
 
 ### 使用Docker搭建kafka集群
@@ -400,32 +390,19 @@ kafka-topics.sh --create --zookeeper 192.168.56.101:2181 --replication-factor 2 
 * 再跑一个kafka镜像，然后BrokerId设置为1，端口号为9093
 
 ```shell
-docker run -d --name kafka2 \
- -p 9093:9093 \
- -e KAFKA_BROKER_ID=1 \
- -e KAFKA_ZOOKEEPER_CONNECT=192.168.56.101:2181 \
- -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.56.101:9093 \
- -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -t wurstmeister/kafka
+docker run -d --name kafka2 \ -p 9093:9093 \ -e KAFKA_BROKER_ID=1 \ -e KAFKA_ZOOKEEPER_CONNECT=192.168.56.101:2181 \ -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.56.101:9093 \ -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -t wurstmeister/kafka
 ```
 
 * 建立topic
 
 ```shell
-#先进入容器
-docker exec -it kafka2 /bin/bash
-#到topics.sh目录下
-cd bin/
-#建立分区
-kafka-topics.sh --create --zookeeper 192.168.56.101:2181 --replication-factor 2 --partitions 2 --topic topic2
+#先进入容器docker exec -it kafka2 /bin/bash#到topics.sh目录下cd bin/#建立分区kafka-topics.sh --create --zookeeper 192.168.56.101:2181 --replication-factor 2 --partitions 2 --topic topic2
 ```
 
 * 查看创建的topic和集群消息
 
 ```shell
-#进入到目录下
-cd bin/
-#查询topic信息，可以看到leader机器、副本在分区上的保存情况，和ISR列表成员
-kafka-topics.sh --describe --zookeeper 192.168.56.101:2181 --topic topic2
+#进入到目录下cd bin/#查询topic信息，可以看到leader机器、副本在分区上的保存情况，和ISR列表成员kafka-topics.sh --describe --zookeeper 192.168.56.101:2181 --topic topic2
 ```
 
 ### springboot整合kafka
@@ -433,103 +410,25 @@ kafka-topics.sh --describe --zookeeper 192.168.56.101:2181 --topic topic2
 * 导入依赖
 
 ```xml
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
+        <dependency>            <groupId>org.springframework.kafka</groupId>            <artifactId>spring-kafka</artifactId>        </dependency>
 ```
 
 * 写配置文件
 
 ```properties
-###########【Kafka集群】###########
-spring.kafka.bootstrap-servers=192.168.56.101:9092,192.168.56.101:9093
-###########【初始化生产者配置】###########
-# 重试次数
-spring.kafka.producer.retries=0
-# 应答级别:多少个分区副本备份完成时向生产者发送ack确认(可选0、1、all/-1)
-spring.kafka.producer.acks=1
-# 批量大小
-spring.kafka.producer.batch-size=16384
-# 提交延时
-spring.kafka.producer.properties.linger.ms=0
-# 当生产端积累的消息达到batch-size或接收到消息linger.ms后,生产者就会将消息提交给kafka
-# linger.ms为0表示每接收到一条消息就提交给kafka,这时候batch-size其实就没用了
-# 生产端缓冲区大小
-spring.kafka.producer.buffer-memory = 33554432
-# Kafka提供的序列化和反序列化类
-spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
-spring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer
-# 自定义分区器
-# spring.kafka.producer.properties.partitioner.class=com.felix.kafka.producer.CustomizePartitioner
-###########【初始化消费者配置】###########
-# 默认的消费组ID
-spring.kafka.consumer.properties.group.id=defaultConsumerGroup
-# 是否自动提交offset
-spring.kafka.consumer.enable-auto-commit=true
-# 提交offset延时(接收到消息后多久提交offset)
-spring.kafka.consumer.auto.commit.interval.ms=1000
-# 当kafka中没有初始offset或offset超出范围时将自动重置offset
-# earliest:重置为分区中最小的offset;
-# latest:重置为分区中最新的offset(消费分区中新产生的数据);
-# none:只要有一个分区不存在已提交的offset,就抛出异常;
-spring.kafka.consumer.auto-offset-reset=latest
-# 消费会话超时时间(超过这个时间consumer没有发送心跳,就会触发rebalance操作)
-spring.kafka.consumer.properties.session.timeout.ms=120000
-# 消费请求超时时间
-spring.kafka.consumer.properties.request.timeout.ms=180000
-# Kafka提供的序列化和反序列化类
-spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-spring.kafka.consumer.value-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-# 消费端监听的topic不存在时，项目启动会报错(关掉)
-spring.kafka.listener.missing-topics-fatal=false
-# 设置批量消费
-# spring.kafka.listener.type=batch
-# 批量消费每次最多消费多少条消息
-# spring.kafka.consumer.max-poll-records=50
+###########【Kafka集群】###########spring.kafka.bootstrap-servers=192.168.56.101:9092,192.168.56.101:9093###########【初始化生产者配置】############ 重试次数spring.kafka.producer.retries=0# 应答级别:多少个分区副本备份完成时向生产者发送ack确认(可选0、1、all/-1)spring.kafka.producer.acks=1# 批量大小spring.kafka.producer.batch-size=16384# 提交延时spring.kafka.producer.properties.linger.ms=0# 当生产端积累的消息达到batch-size或接收到消息linger.ms后,生产者就会将消息提交给kafka# linger.ms为0表示每接收到一条消息就提交给kafka,这时候batch-size其实就没用了# 生产端缓冲区大小spring.kafka.producer.buffer-memory = 33554432# Kafka提供的序列化和反序列化类spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializerspring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer# 自定义分区器# spring.kafka.producer.properties.partitioner.class=com.felix.kafka.producer.CustomizePartitioner###########【初始化消费者配置】############ 默认的消费组IDspring.kafka.consumer.properties.group.id=defaultConsumerGroup# 是否自动提交offsetspring.kafka.consumer.enable-auto-commit=true# 提交offset延时(接收到消息后多久提交offset)spring.kafka.consumer.auto.commit.interval.ms=1000# 当kafka中没有初始offset或offset超出范围时将自动重置offset# earliest:重置为分区中最小的offset;# latest:重置为分区中最新的offset(消费分区中新产生的数据);# none:只要有一个分区不存在已提交的offset,就抛出异常;spring.kafka.consumer.auto-offset-reset=latest# 消费会话超时时间(超过这个时间consumer没有发送心跳,就会触发rebalance操作)spring.kafka.consumer.properties.session.timeout.ms=120000# 消费请求超时时间spring.kafka.consumer.properties.request.timeout.ms=180000# Kafka提供的序列化和反序列化类spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializerspring.kafka.consumer.value-deserializer=org.apache.kafka.common.serialization.StringDeserializer# 消费端监听的topic不存在时，项目启动会报错(关掉)spring.kafka.listener.missing-topics-fatal=false# 设置批量消费# spring.kafka.listener.type=batch# 批量消费每次最多消费多少条消息# spring.kafka.consumer.max-poll-records=50
 ```
 
 * 写一个接口充当生产者：这里有不带回调和带回调的
 
 ```java
-@RestController
-public class KafkaProducer {
-    @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
-
-    // 发送消息，简单的生产者
-    @GetMapping("/kafka/normal/{message}")
-    public void sendMessage1(@PathVariable("message") String normalMessage) {
-        kafkaTemplate.send("topic1", normalMessage);
-    }
-	//带回调，复杂的生产者
-    @GetMapping("/kafka/callbackOne/{message}")
-    public void sendMessage2(@PathVariable("message") String callbackMessage) {
-        kafkaTemplate.send("topic1",callbackMessage).addCallback(success->{
-            String topic = success.getRecordMetadata().topic();
-            int partition = success.getRecordMetadata().partition();
-            long offset = success.getRecordMetadata().offset();
-            System.out.println("生产成功,所在的topic为:"+topic+"对应分区为："+partition+"对应的偏移量为："+offset);
-                },failure->{
-            System.out.println("生产失败");
-                }
-        );
-    }
-}
+@RestControllerpublic class KafkaProducer {    @Autowired    private KafkaTemplate<String, Object> kafkaTemplate;    // 发送消息，简单的生产者    @GetMapping("/kafka/normal/{message}")    public void sendMessage1(@PathVariable("message") String normalMessage) {        kafkaTemplate.send("topic1", normalMessage);    }	//带回调，复杂的生产者    @GetMapping("/kafka/callbackOne/{message}")    public void sendMessage2(@PathVariable("message") String callbackMessage) {        kafkaTemplate.send("topic1",callbackMessage).addCallback(success->{            String topic = success.getRecordMetadata().topic();            int partition = success.getRecordMetadata().partition();            long offset = success.getRecordMetadata().offset();            System.out.println("生产成功,所在的topic为:"+topic+"对应分区为："+partition+"对应的偏移量为："+offset);                },failure->{            System.out.println("生产失败");                }        );    }}
 ```
 
 * 写一个消费者
 
 ```java
-@Component
-public class KafkaConsumer {
-    // 消费监听
-    @KafkaListener(topics = {"topic1"})
-    public void onMessage1(ConsumerRecord<?, ?> record){
-        // 消费的哪个topic、partition的消息,打印出消息内容
-        System.out.println("简单消费："+record.topic()+"-"+record.partition()+"-"+record.value());
-    }
-}
+@Componentpublic class KafkaConsumer {    // 消费监听    @KafkaListener(topics = {"topic1"})    public void onMessage1(ConsumerRecord<?, ?> record){        // 消费的哪个topic、partition的消息,打印出消息内容        System.out.println("简单消费："+record.topic()+"-"+record.partition()+"-"+record.value());    }}
 ```
 
 ### kafka命令
@@ -539,14 +438,7 @@ public class KafkaConsumer {
 * kafka内重要的目录
 
 ```shell
-#使用kafka需要到该目录下找到/kafka-topics.sh
-kafka_2.11-1.01/bin/
-#kakfa配置类
-./kafka-server-star.sh/config/server.properties
-#kafka日志
-log/tmp/kafka-logs
-#docker 容器下是在这里
-kafka/kafka-logs-faf94cd21bfc
+#使用kafka需要到该目录下找到/kafka-topics.shkafka_2.11-1.01/bin/#kakfa配置类./kafka-server-star.sh/config/server.properties#kafka日志log/tmp/kafka-logs#docker 容器下是在这里kafka/kafka-logs-faf94cd21bfc
 ```
 
 * 创建topic
@@ -585,17 +477,7 @@ kafka-topics.sh  --zookeeper 127.0.0.1:2181 --describe --topic test1
 ​	不考虑多副本的情况，一个分区对应一个日志(Log)。为了防止Log过大，Kafka又引入了日志分段(LogSegment)的概念，将Log切分为多个LogSegment，相当于一个巨型文件被平均分配为多个相对较小的文件，这样也便于消息的维护和清理。
 
 ```shell
-#可以到具体盘符下查看存储的日志有什么
-log/tmp/kafka-logs
-#docker 容器下是在这里
-kafka/kafka-logs-faf94cd21bfc
-#查看日志文件
-bash-5.1# cd kafka-logs-faf94cd21bfc/
-bash-5.1# ls 
-cleaner-offset-checkpoint         recovery-point-offset-checkpoint  test1-1
-log-start-offset-checkpoint       replication-offset-checkpoint
-meta.properties                   test1-0
-#会发现kafka内部自己存储了我对应的offset，以便后续查询
+#可以到具体盘符下查看存储的日志有什么log/tmp/kafka-logs#docker 容器下是在这里kafka/kafka-logs-faf94cd21bfc#查看日志文件bash-5.1# cd kafka-logs-faf94cd21bfc/bash-5.1# ls cleaner-offset-checkpoint         recovery-point-offset-checkpoint  test1-1log-start-offset-checkpoint       replication-offset-checkpointmeta.properties                   test1-0#会发现kafka内部自己存储了我对应的offset，以便后续查询
 ```
 
 会发现kafka内部自己存储了我对应的offset，以便后续查询重复的消息，进入到对应分区，会发现字段都在这。
@@ -724,3 +606,44 @@ meta.properties                   test1-0
 kafka采用的是磁盘顺序读写方式，极大的提升了读写性能。
 
 ![image-20211022175412780](kafka-study/image-20211022175412780.png)
+
+####  高性能页缓存
+
+一般磁盘I/O的场景有以下四种:
+
+* 用户调用标准C库进行I/O操作，数据流为︰应用程序 buffer→C库标准IObuffer→文件系统页缓存→通过具体文件系统到磁盘。
+* 用户调用文件IO，数据流为︰应用程序 buffer→文件系统页缓存→通过具体文件系统到磁盘。
+* 用户打开文件时使用O_DIRECT，绕过页缓存直接读写磁盘。
+* 用户使用类似dd工具，并使用direct参数，绕过系统cache与文件系统直接写磁盘。
+
+![image-20211027103719723](kafka-study/image-20211027103719723.png)
+
+#### 零拷贝
+
+​	所谓的零拷贝是指将数据直接从磁盘文件复制到网卡设备中，而不需要经由应用程序之手。零拷贝大大提高了应用程序的性能，减少了内核和用户模式之间的上下文切换。
+
+##### 正常流程
+
+正常流程：切换到内核态，从内核态的磁盘中拉取数据--->拉到内核buffer里面--->虚拟机（应用层）的buffer--->应用层的用户态切换到内核态--->Socket Buffer--->网卡
+
+* 调用read()时，文件A中的内容被复制到了内核模式下的Read Buffer中。
+* CPU控制将内核模式数据复制到用户模式下。
+* 调用write()时，将用户模式下的内容复制到内核模式下的Socket Buffer中。
+* 将内核模式下的Socket Buffer的数据复制到网卡设备中传送。
+
+![image-20211027110001825](kafka-study/image-20211027110001825.png)
+
+##### 零拷贝流程
+
+![image-20211027111305754](kafka-study/image-20211027111305754.png)
+
+应用层上下文切换：用户态和内核态的切换过程，会损耗cpu。而零拷贝去掉了这个过程。
+
+* 把数据从disk拉出来然后做一次复制到Read Buffer
+* 发送到网卡里去
+
+ 此时由4步直接变成了2步，性能大大的提高了。
+
+
+
+至此kafka学习基本完毕了，下去整理下API就差不多了~
