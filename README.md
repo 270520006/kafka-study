@@ -12,3 +12,7 @@
 4、使用docker搭建了kafka单体和集群
 
 5、整合了springboot和kafka
+
+6、学习完毕kafka的全部特性
+
+7、kafka学习完毕
